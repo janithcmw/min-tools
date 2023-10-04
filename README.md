@@ -1,1 +1,1 @@
-# min-tools
+# mini-tools
