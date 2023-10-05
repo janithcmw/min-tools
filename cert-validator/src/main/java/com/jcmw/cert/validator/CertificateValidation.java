@@ -91,7 +91,7 @@ public class CertificateValidation {
         // Initialize cert path validator.
         CertPathValidator certPathValidator = CertPathValidator.getInstance("PKIX");
 
-        if(certificateChain.size() > 1) {
+        if(!certificateChain.isEmpty()) {
             log.info("The certificate chain, " + Arrays.toString(certificateChain.toArray()) + " which is provided " +
                     "via the file, " + certificateFilePath + "will be validated against the provided trust store, " +
                     truststorePath + ".");
@@ -165,8 +165,8 @@ public class CertificateValidation {
                 X509Certificate storedX509Certificate = (X509Certificate) truststoreCertificate;
                 byte[] storedFingerprint = calculateCertFingerprint(storedX509Certificate);
                 if (MessageDigest.isEqual(currentCertificateFingerprint, storedFingerprint)) {
-                    log.info("The exact certificate was found in the pointed trust store under the alias," + alias +
-                            ", hence the pointed trust store will trust the pointed cert.");
+                    log.info("The exact certificate was found in the pointed trust store under the alias, '" + alias +
+                            "', hence the pointed trust store will trust the pointed cert.");
                     return true; // Certificate fingerprint matches a certificate in the truststore
                 }
             }
