@@ -115,9 +115,9 @@ public class CertificateValidation {
                 log.info("Certificate chain is valid.");
                 return true;
             } catch (CertPathValidatorException e) {
-                log.error("Certificate chain is NOT valid with the error stack", e);
-                log.info("Certificate chain is NOT valid due to the previous error, now trying to validate the " +
-                        "certificate exact existence in the pointed trust store: " + e.getMessage());
+                log.debug("Certificate chain is NOT valid with the error stack", e);
+                log.info("Certificate chain validation is failed, now trying to validate the exact existence of the " +
+                        "certificate in the pointed trust store: " + e.getMessage());
                 boolean isCertExist = false;
                 try {
                     isCertExist = validateCertExistence(truststore, curretCertificate);
