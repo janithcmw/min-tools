@@ -91,28 +91,7 @@ public class CertificateValidation {
         // Initialize cert path validator.
         CertPathValidator certPathValidator = CertPathValidator.getInstance("PKIX");
 
-        if (certificateChain.size() == 1) {
-            log.info("The provided certificate file contains only one certificate, hence it is not possible do a " +
-                    "chain validation. Single certificate validation will be executed base on certificate " +
-                    "fingerprint.");
-
-            byte[] currentCertificateFingerprint = calculateCertFingerprint((X509Certificate) curretCertificate);
-            log.debug("The sha256 fingerprint value of the given certificate is: " + Arrays.toString(currentCertificateFingerprint));
-            Enumeration<String> trustStoreAliases = truststore.aliases();
-            while (trustStoreAliases.hasMoreElements()) {
-                String alias = trustStoreAliases.nextElement();
-                Certificate truststoreCertificate = truststore.getCertificate(alias);
-                if (truststoreCertificate instanceof X509Certificate) {
-                    X509Certificate storedX509Certificate = (X509Certificate) truststoreCertificate;
-                    byte[] storedFingerprint = calculateCertFingerprint(storedX509Certificate);
-                    if (MessageDigest.isEqual(currentCertificateFingerprint, storedFingerprint)) {
-
-                        return true; // Certificate fingerprint matches a certificate in the truststore
-                    }
-                }
-            }
-            return false;
-        } else if(certificateChain.size() > 1) {
+        if(certificateChain.size() > 1) {
             log.info("The certificate chain, " + Arrays.toString(certificateChain.toArray()) + " which is provided " +
                     "via the file, " + certificateFilePath + "will be validated against the provided trust store, " +
                     truststorePath + ".");
@@ -136,8 +115,18 @@ public class CertificateValidation {
                 log.info("Certificate chain is valid.");
                 return true;
             } catch (CertPathValidatorException e) {
-                log.info("Certificate chain is NOT valid: " + e.getMessage());
-                return false;
+                log.error("Certificate chain is NOT valid with the error stack", e);
+                log.info("Certificate chain is NOT valid due to the previous error, now trying to validate the " +
+                        "certificate exact existence in the pointed trust store: " + e.getMessage());
+                boolean isCertExist = false;
+                try {
+                    isCertExist = validateCertExistence(truststore, curretCertificate);
+                } catch (Exception validateCertExistenceStack) {
+                    log.error("An error as occurred when validating the certificate existence, hence the certificate " +
+                            "trust validation will be failed.", validateCertExistenceStack);
+                    return false;
+                }
+                return isCertExist;
             }
         } else {
             log.error("Invalid number of certificate detected, please check the content of the certificate file, '" +
@@ -158,5 +147,32 @@ public class CertificateValidation {
             throw new CertificateEncodingException(e);
         }
         return certificateSHA256Digest.digest(certificateSHA256FingerPrint);
+    }
+
+    private static Boolean validateCertExistence(KeyStore truststore, Certificate curretCertificate) throws Exception {
+        log.info("The provided certificate file contains only one certificate, hence it is not possible do a " +
+                "chain validation. Single certificate validation will be executed base on certificate " +
+                "fingerprint.");
+
+        byte[] currentCertificateFingerprint = new byte[0];
+        currentCertificateFingerprint = calculateCertFingerprint((X509Certificate) curretCertificate);
+        log.debug("The sha256 fingerprint value of the given certificate is: " + Arrays.toString(currentCertificateFingerprint));
+        Enumeration<String> trustStoreAliases = truststore.aliases();
+        while (trustStoreAliases.hasMoreElements()) {
+            String alias = trustStoreAliases.nextElement();
+            Certificate truststoreCertificate = truststore.getCertificate(alias);
+            if (truststoreCertificate instanceof X509Certificate) {
+                X509Certificate storedX509Certificate = (X509Certificate) truststoreCertificate;
+                byte[] storedFingerprint = calculateCertFingerprint(storedX509Certificate);
+                if (MessageDigest.isEqual(currentCertificateFingerprint, storedFingerprint)) {
+                    log.info("The exact certificate was found in the pointed trust store under the alias," + alias +
+                            ", hence the pointed trust store will trust the pointed cert.");
+                    return true; // Certificate fingerprint matches a certificate in the truststore
+                }
+            }
+        }
+        log.error("The exact certificate was not found in the pointed trust store, hence the pointed trust " +
+                "store will not trust the pointed cert.");
+        return false;
     }
 }
