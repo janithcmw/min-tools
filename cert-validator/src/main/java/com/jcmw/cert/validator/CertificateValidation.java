@@ -150,13 +150,13 @@ public class CertificateValidation {
     }
 
     private static Boolean validateCertExistence(KeyStore truststore, Certificate curretCertificate) throws Exception {
-        log.info("The provided certificate file contains only one certificate, hence it is not possible do a " +
-                "chain validation. Single certificate validation will be executed base on certificate " +
-                "fingerprint.");
+        log.info("The provided certificate file contains only one certificate, since the chain validation is failed, " +
+                "the single certificate validation will be executed base on certificate fingerprint.");
 
         byte[] currentCertificateFingerprint = new byte[0];
         currentCertificateFingerprint = calculateCertFingerprint((X509Certificate) curretCertificate);
-        log.debug("The sha256 fingerprint value of the given certificate is: " + Arrays.toString(currentCertificateFingerprint));
+        log.debug("The sha256 fingerprint value of the given certificate is: " +
+                formatCertFingerprint(currentCertificateFingerprint));
         Enumeration<String> trustStoreAliases = truststore.aliases();
         while (trustStoreAliases.hasMoreElements()) {
             String alias = trustStoreAliases.nextElement();
@@ -174,5 +174,14 @@ public class CertificateValidation {
         log.error("The exact certificate was not found in the pointed trust store, hence the pointed trust " +
                 "store will not trust the pointed cert.");
         return false;
+    }
+
+    public static String formatCertFingerprint(byte[] currentCertificateFingerprint) {
+        StringBuilder fingerprint = new StringBuilder(2 * currentCertificateFingerprint.length);
+        for (byte b : currentCertificateFingerprint) {
+            fingerprint.append(String.format("%02X:", b & 0xFF));
+        }
+        // Remove the trailing colon
+        return fingerprint.substring(0, fingerprint.length() - 1);
     }
 }
