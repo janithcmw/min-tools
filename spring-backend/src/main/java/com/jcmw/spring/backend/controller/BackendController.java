@@ -34,7 +34,6 @@ public class BackendController {
             String headerValue = request.getHeader(headerName);
             predefinedHeaders.put(headerName, Collections.singletonList(headerValue));
         }
-        log.info("The context path /api/headers' message-body executed.");
         return ResponseEntity.accepted().body("Headers updated successfully, the updated headers are, " +
                 predefinedHeaders.toString());
     }
